@@ -1,0 +1,115 @@
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"
+            integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<div id="windspeed_d3_chart"></div>
+<script type="module">
+    const width = document.body.clientWidth,
+          height = document.body.clientHeight;
+    const makeChart = (data) => {
+        const ch = d3.select("#windspeed_d3_chart")
+        .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+        .append("g");
+
+        const raw = data.split("\n");
+        const year0 = (new Date(parseInt(raw[0].split("\t")[0]))).getFullYear(),
+              yearN = (new Date(parseInt(raw[raw.length - 2].split("\t")[0]))).getFullYear();
+        const years = {};
+        let _year0, _yearN, lastValidRow;
+        for (let i = 2006; i <= yearN; i++) {
+            years[i] = [];
+        }
+        const yearsSet = Object.keys(years);
+        let c=0;
+        raw.forEach((row, i) => {
+            if (row.trim() === "") return;
+            let flds, dt;
+            try {
+                if (c++ % 24) return;
+                flds = row.split ("\t");
+                dt = new Date(parseInt(flds[0]));
+                if (!flds[2] || (flds[2] === "NaN")) return;
+                if(!_year0) _year0 = dt.getFullYear();
+                years[dt.getFullYear()].push(lastValidRow={
+                    d: dt,
+                    w: parseFloat(flds[2])
+                });
+            } catch(e) {
+                debugger;
+            }
+        });
+        _yearN = lastValidRow.d.getFullYear();
+
+        const x = d3.scaleTime()
+            .domain([years[_year0][0].d, years[_yearN][years[_yearN].length-1].d])
+            .range([0, width]);
+        const yMax_ = d3.max(Object.values(years).flatMap(year => year.map(d => d.w)));
+        const yMax = d3.max(yearsSet.map(year => d3.max(years[year].values().map(d => d.w))));
+        const y = d3.scaleLinear()
+                    .domain([0, yMax])
+                    .range([height, 0]);
+
+        ch.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        ch.append("g")
+            .call(d3.axisLeft(y));
+
+        Object.keys(years).forEach((year, i) => {
+            const dt = years[year][0].d;
+            ch.append("text")
+                .attr("x", x(dt))
+                .attr("y", y(0))
+                .text(dt.getFullYear())
+                .style("font-size", "9px")
+                .style("fill", "#000");
+        });
+        for(let yAxis = 0; yAxis <= yMax; yAxis += 1) {
+            ch.append("text")
+                .attr("x", 0)
+                .attr("y", y(yAxis))
+                .text(yAxis)
+                .style("font-size", "9px")
+                .style("fill", "#000");
+        }
+        Object.keys(years).forEach(year => {
+            ch.selectAll("dot")
+                .data(years[year])
+                .enter()
+                .append("circle")
+                .attr("cx", d => x(d.d))
+                .attr("cy", d => y(d.w))
+                .attr("r", 3)
+                .style("fill", "#69b3a2");
+        });
+    }
+
+    async function fetchData () {
+        const response = await fetch('wind-speed-data.tsv', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'headers': ['Access-Control-Allow-Origin: *']
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+        return await response.text();
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const data = await fetchData();
+        makeChart(data);
+    });
+
+</script>
+</body>
+</html>

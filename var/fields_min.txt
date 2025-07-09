@@ -1,0 +1,9 @@
+DATE
+temperature
+wind_direction
+wind_direction_Measurement_Code
+wind_speed
+wind_speed_Measurement_Code
+wind_gust
+wind_gust_Measurement_Code
+relative_humidity
