@@ -1,0 +1,17 @@
+STATION
+Station_name
+DATE
+temperature
+dew_point_temperature
+station_level_pressure
+sea_level_pressure
+wind_direction
+wind_speed
+wind_gust
+precipitation
+relative_humidity
+wet_bulb_temperature
+pressure_3hr_change
+sky_cover_1
+sky_cover_baseht_1
+sky_cover_2
